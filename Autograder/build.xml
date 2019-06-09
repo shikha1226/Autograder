@@ -1,0 +1,122 @@
+<?xml version="1.0"?>
+<project name="Demo ant junit" default="compile" basedir=".">
+
+  <property name="dir.build" value="build"/>
+  <property name="dir.src" value="src"/>
+  <property environment="env"/>
+
+  <path id="classpath.project">
+    <pathelement path="${dir.build}"/>
+  </path>
+
+  <target name="install.junit">
+    <fail unless="env.JUNIT_HOME">
+      The JUNIT_HOME environment variable must be set.
+    </fail>
+
+    <available property="junit.already.installed"
+               file="${ant.home}/lib/junit4.jar"/>
+
+    <copy file="${env.JUNIT_HOME}/junit4.jar"
+          todir="${ant.home}/lib"
+          failonerror="true"/>
+   
+    <fail unless="junit.already.installed">
+      junit.jar was not found in ANT_HOME/lib prior to this 
+      build, so it was copied for you. Please try your build again.
+    </fail>
+  </target>
+
+  <target name="prepare" depends="install.junit">
+    <mkdir dir="${dir.build}"/>
+  </target>
+
+  <target name="clean"
+          description="Remove all generated files.">
+    <delete dir="${dir.build}"/>
+  </target>
+
+  <target name="compile" depends="prepare"
+          description="Compile all source code.">
+    <javac srcdir="${dir.src}" destdir="${dir.build}">
+      <classpath refid="classpath.project"/>
+    </javac>
+  </target>
+
+  <target name="junit1" depends="compile">
+    <junit printsummary="on" 
+           fork="false" 
+           haltonfailure="false"
+           failureproperty="tests.failed"
+           showoutput="true">
+
+      <classpath refid="classpath.project"/>
+      <formatter type="brief" usefile="false"/>
+
+      <batchtest>
+        <fileset dir="${dir.src}">
+          <include name="**/test*.java"/>
+          <exclude name="**/AllTests.java"/>
+        </fileset>
+      </batchtest>
+    </junit>
+
+    <fail if="tests.failed">
+    *******************************************************
+    *******************************************************
+    One or more tests failed. Check the output...
+    *******************************************************
+    *******************************************************
+    </fail>
+  </target>
+
+  <target name="junit2" depends="compile">
+    <!-- you may override this on the command line:
+         ant -Dtestcase=com/java2s/javaxp/junit/TestGame junit2 -->
+    <property name="testcase" 
+              value="com/java2s/javaxp/junit/TestPerson"/>
+
+    <junit fork="false">
+      <classpath refid="classpath.project"/>
+      <formatter type="plain" usefile="false"/>
+
+      <test name="${testcase}"/>
+    </junit>
+  </target>
+
+
+  <target name="junit3" depends="compile">
+    <junit printsummary="on" fork="false" haltonfailure="false">
+
+      <classpath refid="classpath.project"/>
+      <formatter type="xml"/>
+
+      <batchtest todir="${dir.build}">
+        <fileset dir="${dir.src}">
+          <include name="**/*test*.java"/>
+          <exclude name="**/AllTests.java"/>
+        </fileset>
+      </batchtest>
+
+    </junit>
+
+    <junitreport todir="${dir.build}">
+      <fileset dir="${dir.build}">
+        <include name="TEST-*.xml"/>
+      </fileset>
+      <report format="frames" todir="${dir.build}"/>
+    </junitreport>
+
+    <pathconvert dirsep="/" property="reportUrl">
+      <path>
+        <pathelement location="${dir.build}/first.txt"/>
+      </path>
+    </pathconvert>
+
+    <exec executable="cmd" os="Windows 10">
+      <arg value="/C"/>
+      <arg value="${reportUrl}"/>
+    </exec>
+  </target>
+
+</project>
